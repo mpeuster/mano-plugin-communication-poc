@@ -7,26 +7,43 @@ from ..sonbase.manoplugin import ManoPlugin
 class SonPluginManager(ManoPlugin):
 
     def __init__(self):
-        super(self.__class__, self).__init__()
-        # start receiver loop
-        self.start_io_loop(blocking=False)
+        # plugin management: simple dict for bookkeeping
+        self.plugins = {}
+        # call super class to do all the messaging and registration overhead
+        super(self.__class__, self).__init__(blocking=True)  # we block and wait until someone registers
 
     def declare_subscriptions(self):
-        self.subscribe("platform.*", self.callback_print)
+        """
+        Declare topics to which we want to listen and define callback methods.
+        """
+        self.subscribe("platform.management.plugins.register", self.on_register)
+        self.subscribe("platform.management.plugins.deregister", self.on_deregister)
+        self.subscribe("platform.management.plugins.list", self.on_list)
 
-    def test(self):
-        self.publish("platform.test", json.dumps("Hello World!"))
+    def on_register(self, ch, method, properties, body):
+        sender = properties.app_id
+        message = json.loads(body)
+        # simplified example for plugin bookkeeping
+        self.plugins[sender] = message
 
-    def callback_print(self, ch, method, properties, body):
-        logging.debug("RECEIVED from %r on %r: %r" % (
-            properties.app_id, method.routing_key, json.loads(body)))
+    def on_deregister(self, ch, method, properties, body):
+        sender = properties.app_id
+        message = json.loads(body)
+        # simplified example for plugin bookkeeping
+        self.plugins[sender] = message
+
+    def on_list(self, ch, method, properties, body):
+        sender = properties.app_id
+        message = json.loads(body)
+        if message.get("type") == "REQ":
+            # we have a request, lets answer
+            message = {"type": "REP",
+                       "plugins": self.plugins}
+            self.publish("platform.management.plugins.list", json.dumps(message))
 
 
 def main():
     spm = SonPluginManager()
-    spm.test()
-    time.sleep(1)
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

@@ -17,7 +17,7 @@ RABBITMQ_EXCHANGE = "son-kernel"
 
 class ManoPlugin(object):
 
-    def __init__(self):
+    def __init__(self, blocking=False):
         self.conn = None
         self.chan = None
         logging.info(
@@ -26,8 +26,16 @@ class ManoPlugin(object):
         self._connect_to_rabbitmq()
         # register subscriptions
         self.declare_subscriptions()
+        # register to plugin manager
+        self.register()
+        # start receiver loop
+        self.start_io_loop(blocking=blocking)
+        # jump to run()
+        self.run()
 
     def __del__(self):
+        # de-register this plugin
+        self.deregister()
         if self.chan:
             self.chan.close()
         if self.conn:
@@ -43,7 +51,13 @@ class ManoPlugin(object):
             exchange=RABBITMQ_EXCHANGE, type='topic')
         logging.info("Connected to RabbitMQ on %r", RABBITMQ_HOST)
 
-    def declare_subscriptions():
+    def declare_subscriptions(self):
+        """
+        To be overwritten by subclass
+        """
+        pass
+
+    def run(self):
         """
         To be overwritten by subclass
         """
@@ -70,16 +84,17 @@ class ManoPlugin(object):
         """
         # TODO allow list of topics, to handle multiple topics with a single callback function
         # create a queue for incoming message
-        self.chan.queue_declare("queue_%s" % topic)
+        # (each MANO plugin needs it own queue, otherwise messages are only processed by the one which fetches it first)
+        self.chan.queue_declare("queue_%s_%s" % (self.__class__.__name__, topic))
         # bind the queue to all given topics
         self.chan.queue_bind(
             exchange=exchange,
-            queue="queue_%s" % topic,
+            queue="queue_%s_%s" % (self.__class__.__name__, topic),
             routing_key=topic)
         # define a callback function to be called whenever a message arrives in our queue
         self.chan.basic_consume(
             callback,
-            queue="queue_%s" % topic,
+            queue="queue_%s_%s" % (self.__class__.__name__, topic),
             no_ack=True)
         logging.debug("SUBSCRIBED to %r", topic)
 
@@ -97,3 +112,31 @@ class ManoPlugin(object):
         t = threading.Thread(target=reciever_thread, args=())
         t.daemon = True
         t.start()
+
+    def callback_print(self, ch, method, properties, body):
+        """
+        Helper callback that prints the received message.
+        """
+        logging.debug("RECEIVED from %r on %r: %r" % (
+            properties.app_id, method.routing_key, json.loads(body)))
+
+    def register(self):
+        """
+        Send a register event to the plugin manager component to announce this plugin.
+        """
+        message = {"type": "REQ",
+                   "plugin": self.__class__.__name__,
+                   "state": "ACTIVE",
+                   "version": "v0.1-dev1"}
+        self.publish(
+            "platform.management.plugins.register", json.dumps(message))
+
+    def deregister(self):
+        """
+        Send a deregister event to the plugin manager component.
+        """
+        message = {"type": "REQ",
+                   "plugin": self.__class__.__name__,
+                   "state": "INACTIVE"}
+        self.publish(
+            "platform.management.plugins.deregister", json.dumps(message))
