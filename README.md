@@ -4,12 +4,12 @@
 * Running RabbitMQ broker instance on local machine
 * Python Pika: `sudo pip install pika`
 
-## Example A: Simple Plugin Registration
+## Example A: Simple plugin registration
 
 Run the following commands (each in an own terminal):
 * `python -m kernelpoc.sonpluginmanager`
-* `python -m sonkernelpoc.plugin1`
+* `python -m kernelpoc.plugin1`
 
-## Example B: 
+## Example B: Complex workflow using multiple plugins
 * ...
 
