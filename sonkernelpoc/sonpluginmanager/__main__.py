@@ -1,25 +1,31 @@
 import logging
+import json
+import time
 from ..sonbase.manoplugin import ManoPlugin
-
-
-def callback_print(ch, method, properties, body):
-    logging.debug("RECEIVED from %r: %r" % (method.routing_key, body))
 
 
 class SonPluginManager(ManoPlugin):
 
     def __init__(self):
         super(self.__class__, self).__init__()
+        # start receiver loop
+        self.start_io_loop(blocking=False)
 
-    def start(self):
-        self.subscribe("platform.*", callback_print)
-        self.publish("platform.test", "Hello World!")
-        self.chan.start_consuming()
+    def declare_subscriptions(self):
+        self.subscribe("platform.*", self.callback_print)
+
+    def test(self):
+        self.publish("platform.test", json.dumps("Hello World!"))
+
+    def callback_print(self, ch, method, properties, body):
+        logging.debug("RECEIVED from %r on %r: %r" % (
+            properties.app_id, method.routing_key, json.loads(body)))
 
 
 def main():
     spm = SonPluginManager()
-    spm.start()
+    spm.test()
+    time.sleep(1)
 
 
 if __name__ == '__main__':

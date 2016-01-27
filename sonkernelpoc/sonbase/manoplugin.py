@@ -7,6 +7,8 @@ MANO plugins.
 
 import pika
 import logging
+import threading
+import json
 logging.getLogger('pika').setLevel(logging.ERROR)
 
 RABBITMQ_HOST = "localhost"
@@ -22,6 +24,8 @@ class ManoPlugin(object):
             "Starting MANO Plugin: %r ..." % self.__class__.__name__)
         # setup RabbitMQ connection
         self._connect_to_rabbitmq()
+        # register subscriptions
+        self.declare_subscriptions()
 
     def __del__(self):
         if self.chan:
@@ -39,19 +43,30 @@ class ManoPlugin(object):
             exchange=RABBITMQ_EXCHANGE, type='topic')
         logging.info("Connected to RabbitMQ on %r", RABBITMQ_HOST)
 
+    def declare_subscriptions():
+        """
+        To be overwritten by subclass
+        """
+        pass
+
     def publish(self, topic, message, exchange=RABBITMQ_EXCHANGE):
         """
-        Simplified wrapper to publish a message.
+        Simplified wrapper method to publish a message.
         """
+        properties = pika.BasicProperties(
+            app_id=self.__class__.__name__,
+            content_type='application/json')
+
         self.chan.basic_publish(
             exchange=exchange,
             routing_key=topic,
-            body=message)
+            body=message,
+            properties=properties)
         logging.debug("PUBLISHED to %r: %r", topic, message)
 
     def subscribe(self, topic, callback, exchange=RABBITMQ_EXCHANGE):
         """
-        Simplified wrapper for subscriptions.
+        Simplified wrapper method for subscriptions.
         """
         # TODO allow list of topics, to handle multiple topics with a single callback function
         # create a queue for incoming message
@@ -67,3 +82,18 @@ class ManoPlugin(object):
             queue="queue_%s" % topic,
             no_ack=True)
         logging.debug("SUBSCRIBED to %r", topic)
+
+    def start_io_loop(self, blocking=False):
+        """
+        Lets run our receiver in a own thread
+        """
+        def reciever_thread():
+            self.chan.start_consuming()
+
+        if blocking:
+            reciever_thread()
+            return
+
+        t = threading.Thread(target=reciever_thread, args=())
+        t.daemon = True
+        t.start()
