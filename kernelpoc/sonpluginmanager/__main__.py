@@ -25,12 +25,14 @@ class SonPluginManager(ManoPlugin):
         message = json.loads(body)
         # simplified example for plugin bookkeeping
         self.plugins[sender] = message
+        logging.info("REGISTERED: %r" % message.get("plugin"))
 
     def on_deregister(self, ch, method, properties, body):
         sender = properties.app_id
         message = json.loads(body)
         # simplified example for plugin bookkeeping
         self.plugins[sender] = message
+        logging.info("DE-REGISTERED: %r" % message.get("plugin"))
 
     def on_list(self, ch, method, properties, body):
         sender = properties.app_id
