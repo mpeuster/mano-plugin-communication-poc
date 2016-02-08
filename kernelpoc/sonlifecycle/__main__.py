@@ -18,7 +18,9 @@ class LifecyclemanagementPlugin(ManoPlugin):
         self.subscribe("service.management.lifecycle.start", self.on_start)
 
     def on_start(self, ch, method, properties, body):
+        logging.info("=" * 60)
         logging.info(" [x] Trigger the instantiation of the service through the infrastructure abstraction here.")
+        logging.info("=" * 60)
 
     def run(self):
         """
@@ -26,7 +28,7 @@ class LifecyclemanagementPlugin(ManoPlugin):
         """
         while True:
             time.sleep(60)
-            logging.debug("Heartbeat.")
+            self.heartbeat()
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

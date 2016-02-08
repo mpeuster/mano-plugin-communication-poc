@@ -26,7 +26,7 @@ class LoggingPlugin(ManoPlugin):
         """
         while True:
             time.sleep(60)
-            logging.debug("Heartbeat.")
+            self.heartbeat()
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

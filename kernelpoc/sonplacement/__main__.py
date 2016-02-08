@@ -19,7 +19,9 @@ class PlacementPlugin(ManoPlugin):
     def on_compute(self, ch, method, properties, body):
         sender = properties.app_id
         message = json.loads(body)
+        logging.info("=" * 60)
         logging.info(" [x] Do a complicated placement computation here!")
+        logging.info("=" * 60)
         message = {"service": message.get("service"),
                    "placement_graph": "I am a placement graph description."}
         # send result to conflict resolution
@@ -31,7 +33,7 @@ class PlacementPlugin(ManoPlugin):
         """
         while True:
             time.sleep(60)
-            logging.debug("Heartbeat.")
+            self.heartbeat()
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

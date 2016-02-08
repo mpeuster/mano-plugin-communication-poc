@@ -131,6 +131,17 @@ class ManoPlugin(object):
         self.publish(
             "platform.management.plugins.register", json.dumps(message))
 
+    def heartbeat(self):
+        """
+        Send a alive notification to the plugin manager.
+        """
+        logging.debug("Heartbeat.")
+        message = {"type": "NOTIFY",
+                   "plugin": self.__class__.__name__,
+                   "heartbeat": "ALIVE"}
+        self.publish(
+            "platform.management.plugins.heartbeat", json.dumps(message))
+
     def deregister(self):
         """
         Send a deregister event to the plugin manager component.

@@ -1,6 +1,8 @@
 import logging
 import json
 import time
+import argparse
+import sys
 from ..sonbase.manoplugin import ManoPlugin
 
 
@@ -15,6 +17,7 @@ class DemoPlugin1(ManoPlugin):
         Declare topics to which we want to listen and define callback methods.
         """
         self.subscribe("platform.management.plugins.list", self.on_list_result)
+        self.subscribe("service.management.#", self.on_deployment_step)
 
     def on_list_result(self, ch, method, properties, body):
         sender = properties.app_id
@@ -26,20 +29,41 @@ class DemoPlugin1(ManoPlugin):
                 print "%s, %s, %s" % (k, v.get("version"), v.get("state"))
             print "-" * 49
 
-    def run(self):
-        """
-        Overwrites. Put your Plugin code here.
-        """
+    def on_deployment_step(self, ch, method, properties, body):
+        sender = properties.app_id
+        topic = method.routing_key
+        message = json.loads(body)
+        if "placement.compute" in topic:
+            logging.info("NOTIFY: Running placement ...")
+        if "onflictresolution.validate" in topic:
+            logging.info("NOTIFY: Running conflict resolution ...")
+        if "lifecycle.start" in topic:
+            logging.info("NOTIFY: Running lifecycle management ...")
+
+    def list_plugins(self):
         # lets have some fun and query the plugin manager for a list of plugins
         self.publish("platform.management.plugins.list", json.dumps({"type": "REQ"}))
+
+    def deploy_example(self):
         # trigger deployment workflow of example B
         self.publish("service.management.placement.compute", json.dumps(
             {"service": "Service A", "service_chain_graph": "I am a complex service chain."}))
-        # give us some time to react
-        time.sleep(5)
-        # lets stop this plugin
-        self.deregister()
+
+parser = argparse.ArgumentParser(description='plugin1 example interface')
+parser.add_argument(
+    "command",
+    choices=['deploy', 'list'],
+    help="Action to be executed.")
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
     p = DemoPlugin1()
+    # parse inputs and react accordingly
+    args = vars(parser.parse_args(sys.argv[1:]))
+    if args.get("command") == "deploy":
+        p.deploy_example()
+    else:
+        p.list_plugins()
+    # give us some time to react
+    time.sleep(1)
+    p.deregister()

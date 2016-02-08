@@ -19,6 +19,7 @@ class SonPluginManager(ManoPlugin):
         self.subscribe("platform.management.plugins.register", self.on_register)
         self.subscribe("platform.management.plugins.deregister", self.on_deregister)
         self.subscribe("platform.management.plugins.list", self.on_list)
+        self.subscribe("platform.management.plugins.heartbeat", self.callback_print)
 
     def on_register(self, ch, method, properties, body):
         sender = properties.app_id

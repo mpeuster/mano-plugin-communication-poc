@@ -19,7 +19,9 @@ class ConflictresolutionPlugin(ManoPlugin):
     def on_validate(self, ch, method, properties, body):
         sender = properties.app_id
         message = json.loads(body)
+        logging.info("=" * 60)
         logging.info(" [x] Do the conflict resolution here!")
+        logging.info("=" * 60)
         message = {"service": message.get("service"),
                    "placement_graph": "I am a placement graph description.",
                    "validated_placement_graph": "I am a placement graph that was modified by the conflict resolution plugin."}
@@ -32,7 +34,7 @@ class ConflictresolutionPlugin(ManoPlugin):
         """
         while True:
             time.sleep(60)
-            logging.debug("Heartbeat.")
+            self.heartbeat()
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
