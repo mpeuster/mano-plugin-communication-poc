@@ -20,7 +20,7 @@
 
 Run the following commands (each in an own terminal = 2 terminals):
 * `python -m kernelpoc.sonpluginmanager`
-* `python -m kernelpoc.plugin1`
+* `python -m kernelpoc.plugin1 list`
 
 ## Example B: Complex workflow using multiple plugins
 
@@ -31,4 +31,5 @@ Run the following commands (each in an own terminal = 6 terminals):
 * `python -m kernelpoc.sonplacement`
 * `python -m kernelpoc.sonconflict`
 * `python -m kernelpoc.sonlifecycle`
-* `python -m kernelpoc.plugin1`
+* `python -m kernelpoc.plugin1 list`
+* `python -m kernelpoc.plugin1 deploy`
